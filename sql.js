@@ -1,7 +1,8 @@
+//Libraries
 var inquirer = require('inquirer');
 const mysql = require('mysql2');
 const express = require('express')
-const app = express();
+
 
 //Conection to database
 const db = require('./config');
@@ -111,8 +112,6 @@ function addUpdatedEmployee (newIdRole, employeeId){
   });
 }
 
-
-
 //MODULES TO EXPORT TO SERVER.JS
   module.exports = {
   viewAllDepartments,
@@ -122,7 +121,6 @@ function addUpdatedEmployee (newIdRole, employeeId){
   addRole,
   addEmployee,
   addUpdatedEmployee
-  
   }
 
  
