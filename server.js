@@ -1,15 +1,13 @@
 //Libraries
 let inquirer = require('inquirer');
 const mysql = require('mysql2');
-const db = require('./config');
 const cTable = require('console.table');
-  
+
+//Connetion to the database
+const db = require('./config');
 
 //Import query functions to call the database
 let sqlFunctions = require('./sql')
-
-
-
 
 
 
@@ -21,7 +19,7 @@ function managerOptions() {
   console.log('\n');
   inquirer
   .prompt([
-    /* Pass your questions in here */
+    
      {
         type: 'rawlist',
         message: 'What would you like to do?',
@@ -53,7 +51,6 @@ function managerOptions() {
 
       case 'Add a role':
         createNewRole();
-        
       break;
 
       case 'Add an employee':
@@ -67,10 +64,7 @@ function managerOptions() {
       case 'Finish':
       finish();
       break;
-
      }
-
-    // Use user feedback for... whatever!!
   })
   .catch((error) => {
     if (error.isTtyError) {
@@ -105,60 +99,66 @@ function createNewDepartment(){
 //Function to create a new role
 async function createNewRole(){
 
+  /************* CODE TO GET THE DEPARTMENT ID AN NAME ***********************/
+  //Emoty arrays to store department id and name
   let arrayDepartmentId = []
   let arrayDepartmentName = [];
 
   const [departmentsName, fields] = await db.promise().query('SELECT id, name FROM department'); 
-
-  //Get the departments in an array in order that the user can choose which deparment does the new role belong to
+  //Get the department id and depaertment name
   const deparmentsArray = departmentsName.map((element, index)=>{
     let departmentId = element.id;
     let departmentName = element.name;
 
+    //Filling my empty arrays
     arrayDepartmentId.push(departmentId)
     arrayDepartmentName.push(departmentName)
   });
 
-  //Get existing roles to check if a role already exists
+  /**************** CODE TO CHECK IF A ROLE ALREADY EXISTS *******************/
+  //Get title roles to check if a role already exists
   const [roles, roleFields] = await db.promise().query('SELECT title FROM roles;'); 
   let roleName = roles.map((element, index)=>element.title);
   
   inquirer
   .prompt([
-  {
-  type: 'input',
-  message: `Enter the name of the new role`,
-  name: 'nameRole',
-  },
-  {
-  type: 'number',
-  message: `What's the salary of the new role`,
-  name: 'salary',
-  },
-  {
-  type: 'rawlist',
-  message: `Which department does the role belong to?`,
-  name: 'deparmentChoosen',
-  choices: arrayDepartmentName
-  }
+    {
+    type: 'input',
+    message: `Enter the name of the new role`,
+    name: 'nameRole',
+    },
+    {
+    type: 'number',
+    message: `What's the salary of the new role`,
+    name: 'salary',
+    },
+    {
+    type: 'rawlist',
+    message: `Which department does the role belong to?`,
+    name: 'deparmentChoosen',
+    choices: arrayDepartmentName
+    }
    
   ]).then(userInput =>{
     const {nameRole, salary, deparmentChoosen} = userInput;
 
     //Validating the users input
     if(arrayDepartmentName.includes(deparmentChoosen)){
+
         //Validate if the role already exit
         if(roleName.includes(nameRole)  ){
           console.log(`\n Ups! The role already exists \n`)
           managerOptions();
+
         }else{
+      /************GETTING THE DEPARTMENT ID ********************/
       //Get the index from the arrayDepartmentName 
       let indexDepartmentName = arrayDepartmentName.indexOf(deparmentChoosen);
      
-      //Search the department ID with the index
+      //DEPARTMENT ID
       let findDepartmentId = arrayDepartmentId[indexDepartmentName];
       
-      //Giving the collected data to the addRole function in order to send the data to the DATABASE
+      //****** GIVING THE NAME OF THE NEW ROLE, THE SALARY AND THE DEPARTMENT ID TO THE FUNCTION TO CREATE THE NEW ROLE ********************* */
       sqlFunctions.addRole(nameRole, salary, findDepartmentId);
       }
     }
@@ -170,21 +170,23 @@ async function createNewRole(){
 //Function to create a new employee
 async function createNewEmployee() {
 
+   /****************** CODE TO GET THE ROLES ID **************************/
+  //Empty arrays to store role id and role title
   let arrayIdRole = [];
   let arrayTitleRole = [];
 
-  //Get the name of each role to show user all roles in order to asign a role to the new employee
+  //Get the roles id and title from the DATABASE
   const [roles, rolesField] = await db.promise().query('SELECT id, title FROM roles'); 
   let arrayRoles = roles.map((element, index)=>{
     let id = element.id;
     let title = element.title;
 
+    //Filling my empty arrays
     arrayIdRole.push(id)
     arrayTitleRole.push(title)
   });
 
-  console.log(arrayIdRole)
-  console.log(arrayTitleRole)
+   /****************** CODE TO GET JUST THE MANAGER'S NAME *************************/
 
   //Get the Managers name to show the user all managers available
   const [managersName, roleIdfields] = await db.promise().query(`
@@ -192,24 +194,26 @@ async function createNewEmployee() {
   FROM employees employee
   LEFT JOIN employees Manager ON employee.manager_id = manager.id
   WHERE employee.id = 2 OR employee.id = 4 OR employee.id = 6 OR employee.id = 8;`); 
+  //The user will see the choices from this array in the prompt
   let arrayManagers = managersName.map((element, index)=>element.Manager);
 
-
+  /****************** CODE TO GET MANAGER'S ID **************************/
+  //Empty arrays to store the manager's id and name
   let arrayManagerId = [];
   let arrayManagerName = [];
-  //Get all employees in order to GET the ID of every Manager from the employees table. Then, we can use a indexOf method to get the index from the array
+
+  //Get all employees id and name from the DATABASE
   const [idManager, idManagerfields] = await db.promise().query(`SELECT id, CONCAT(employees.first_name, ' ', employees.last_name)AS managerName FROM employees;`)
   let managerName = idManager.map((element, index)=>{
     let id = element.id;
     let name = element.managerName;
 
+    //Filling empty arrays with the employees id and name
     arrayManagerId.push(id);
     arrayManagerName.push(name);
   });
 
-  console.log(arrayManagerId)
-  console.log(arrayManagerName)
-  
+ 
   inquirer
   .prompt([
     {
@@ -237,18 +241,17 @@ async function createNewEmployee() {
     
   ]).then(userInput =>{
 
-    //Deconstruction all the users input
+    //Deconstruction the users input
     const {firstName, lastName, employeeRole, manager } = userInput;
 
-
-    //Validate the users Input. And compare if the users input is equal to the arrayRoles and arrayManagers from above
+    //Validate the users Input and compare if the users input is equal to the arrayTitleRole and arrayManagers
     if( arrayTitleRole.includes(employeeRole) && arrayManagers.includes(manager) ){
         
       //****************  GETTING THE ROLE ID ********************* */
       //Getting the index from the arrayTitleRole to search the id of the role
       const indexRole = arrayTitleRole.indexOf(employeeRole);
 
-      //GETTING ROLE ID
+      //ROLE ID
       const findRoleId = arrayIdRole[indexRole];
 
 
@@ -256,10 +259,10 @@ async function createNewEmployee() {
       //Getting the index to search to id of the selected manager
       const managerIndex = arrayManagerName.indexOf(manager);
 
-      //GETTING THE MANAGER'S ID
+      //MANAGER ID
       const findManagerId = arrayManagerId[managerIndex]
-  
-      //Giving function(addEmployee) the arguments to CREATE the new imployee in the DATABASE with all the collected data
+
+      //********* GIVING THE FIRSTNAME, LASTNAME, ROLE ID AND MANAGER ID TO THE FUNCTION TO CREATE A NEW EMPLOYEE IN DATABASE ******* */
        sqlFunctions.addEmployee(firstName,lastName, findRoleId, findManagerId );
   
     }else{
@@ -274,13 +277,15 @@ async function createNewEmployee() {
 //In order to update an employee I need the Id from the Role and the Id from the employee
 async function updateEmployee(){
 
-  //Arrays will store the names and the id from each employee
+ /****************** CODE TO GET EMPLOYEE'S ID **************************/
+
+  //Empty Arrays will store the names and the id from each employee
   let employeeId = [];
   let employeeName = [];
 
-    //Get all employees in order the user can pick one to update
-    const [employees, fiels] = await db.promise().query(`SELECT id, CONCAT(first_name, ' ', last_name) AS employee FROM employees;`);
-    let employeesName = employees.map((element, index)=>{
+  //Get all employees from DATABASE
+  const [employees, fiels] = await db.promise().query(`SELECT id, CONCAT(first_name, ' ', last_name) AS employee FROM employees;`);
+  let employeesName = employees.map((element, index)=>{
       let name =  element.employee;
       let id = element.id
 
@@ -289,24 +294,23 @@ async function updateEmployee(){
       employeeName.push(name)  
     });
     
-    
+
+  /****************** CODE TO GET THE ROLE ID AND NAME OF EACH ROLE **************************/
   //Arrys will store the id and titles from the roles table
   let idFromRoles = []
   let titleFromRoles = []
 
-  //Get all the roles name to show user all of them
-  const [nameRoles, fields] = await db.promise().query(`SELECT roles.title FROM roles`);
-  let roleName = nameRoles.map((element, index)=>element.title);
-
+  //Getting the role id and role title
   const [nameRolesId, fieldsId] = await db.promise().query(`SELECT  roles.id, roles.title FROM roles`);
   let roleId = nameRolesId.map((element, index)=>{
-    let id = element.id; 
-    idFromRoles.push(id)
-    let title = element.title
-    titleFromRoles.push(title)
+      let id = element.id; 
+      let title = element.title
+
+      //Filling my empty arrays with the role title and role id
+      titleFromRoles.push(title)
+      idFromRoles.push(id)
   });
 
- 
 
   inquirer
   .prompt([
@@ -326,7 +330,7 @@ async function updateEmployee(){
   .then(userChoices=>{
     const {employee, updateRole } = userChoices;
 
-
+    //Validating the users input
     if(titleFromRoles.includes(updateRole) && employeeName.includes(employee)){
       console.log('Se ha encontrado el rol y nombre del employee a actualizar')
 
@@ -346,7 +350,7 @@ async function updateEmployee(){
       let findRoleId = idFromRoles[indexRole]
       // console.log(findRoleId)
 
-      //****************  GIVING THE EMPLOYEE ID AND ROLE ID TO HE FUNCTION ********************* */
+      //****************  GIVING THE (EMPLOYEE ID) AND (ROLE ID) TO THE FUNCTION ********************* */
       //Updating employee in the DATABASE
       sqlFunctions.addUpdatedEmployee(findRoleId, findEmployeeId);
     }else{
@@ -358,8 +362,8 @@ async function updateEmployee(){
 
 
 function finish(){
-  console.log(  "BYE BYE! :)")
-  return ;
+  
+  return console.log(  "BYE BYE! :)") ;
 }
 
 
