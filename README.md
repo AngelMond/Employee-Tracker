@@ -54,7 +54,7 @@ THEN I am prompted to select an employee to update and their new role and this i
 
 # Link to Video!
 * In the video you'll see the functionality of the program.
-<div><a href=" target="_blank">Cick here to see Video!</a></div>
+<div><a href="https://drive.google.com/file/d/1_dj2cls3sSDr0GcMjtEgj37k6DpedpRX/view" target="_blank">Cick here to see Video!</a></div>
 
 
 # THANKS FOR VISITING THIS PROJECT!
