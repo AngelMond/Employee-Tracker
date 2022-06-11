@@ -33,5 +33,5 @@ VALUES
 ("Nikki", "Lauda", 5, null),
 ("James", "Hunter", 6, 5),
 ("Fernando", "Alonso", 7, null),
-("Wayne", "Dyer", 8, 7);
+("Lewis", "Hamilton", 8, 7);
 
